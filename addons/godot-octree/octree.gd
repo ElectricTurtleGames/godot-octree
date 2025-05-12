@@ -1,3 +1,5 @@
+@icon("res://addons/godot-octree/octree_icon.svg")
+
 extends Area3D
 class_name Octree
 
