@@ -1,0 +1,111 @@
+[gd_scene load_steps=5 format=3 uid="uid://dx3fcd331hqem"]
+
+[ext_resource type="Script" path="res://addons/godot-octree/example/octree_demo.gd" id="1_rq4y6"]
+[ext_resource type="Script" path="res://addons/godot-octree/octree.gd" id="2_4mkfl"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_s2xll"]
+transparency = 1
+no_depth_test = true
+albedo_color = Color(0, 1, 0.164706, 0.196078)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_slymr"]
+no_depth_test = true
+albedo_color = Color(1, 0, 0, 1)
+
+[node name="OctreeDemo" type="Node3D" node_paths=PackedStringArray("octree", "camera_axis", "total_trees_value", "total_leaves_value", "highlighted_leaves_value", "fps_value")]
+script = ExtResource("1_rq4y6")
+n_objects = 100000
+default_material = SubResource("StandardMaterial3D_s2xll")
+highlight_material = SubResource("StandardMaterial3D_slymr")
+animate = true
+animation_rate = 0.01
+octree = NodePath("Octree")
+camera_axis = NodePath("CameraAxis")
+total_trees_value = NodePath("InfoHUD/HBoxContainer/TotalTreesValue")
+total_leaves_value = NodePath("InfoHUD/HBoxContainer2/TotalLeavesValue")
+highlighted_leaves_value = NodePath("InfoHUD/HBoxContainer3/HighlightedLeavesValue")
+fps_value = NodePath("InfoHUD/HBoxContainer4/FPSValue")
+
+[node name="Octree" type="Area3D" parent="."]
+script = ExtResource("2_4mkfl")
+max_depth = 5
+size = Vector3(100, 100, 100)
+
+[node name="CameraAxis" type="Node3D" parent="."]
+
+[node name="Camera3D" type="Camera3D" parent="CameraAxis"]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 80, 80)
+
+[node name="InfoHUD" type="CanvasLayer" parent="."]
+
+[node name="HBoxContainer" type="HBoxContainer" parent="InfoHUD"]
+custom_minimum_size = Vector2(250, 0)
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 260.0
+offset_bottom = 33.0
+
+[node name="TotalTrees" type="Label" parent="InfoHUD/HBoxContainer"]
+layout_mode = 2
+text = "Total Trees:"
+
+[node name="HSeparator" type="HSeparator" parent="InfoHUD/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TotalTreesValue" type="Label" parent="InfoHUD/HBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="InfoHUD"]
+custom_minimum_size = Vector2(250, 0)
+offset_left = 10.0
+offset_top = 35.0
+offset_right = 260.0
+offset_bottom = 58.0
+
+[node name="TotalLeaves" type="Label" parent="InfoHUD/HBoxContainer2"]
+layout_mode = 2
+text = "Total Leaves:"
+
+[node name="HSeparator" type="HSeparator" parent="InfoHUD/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TotalLeavesValue" type="Label" parent="InfoHUD/HBoxContainer2"]
+layout_mode = 2
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="InfoHUD"]
+custom_minimum_size = Vector2(250, 0)
+offset_left = 10.0
+offset_top = 58.0
+offset_right = 260.0
+offset_bottom = 81.0
+
+[node name="HighlightedLeaves" type="Label" parent="InfoHUD/HBoxContainer3"]
+layout_mode = 2
+text = "Highlighted Leaves:"
+
+[node name="HSeparator" type="HSeparator" parent="InfoHUD/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HighlightedLeavesValue" type="Label" parent="InfoHUD/HBoxContainer3"]
+layout_mode = 2
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="InfoHUD"]
+custom_minimum_size = Vector2(250, 0)
+offset_left = 10.0
+offset_top = 82.0
+offset_right = 260.0
+offset_bottom = 105.0
+
+[node name="FPS" type="Label" parent="InfoHUD/HBoxContainer4"]
+layout_mode = 2
+text = "FPS:"
+
+[node name="HSeparator" type="HSeparator" parent="InfoHUD/HBoxContainer4"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FPSValue" type="Label" parent="InfoHUD/HBoxContainer4"]
+layout_mode = 2

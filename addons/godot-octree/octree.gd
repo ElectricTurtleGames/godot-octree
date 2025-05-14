@@ -7,7 +7,7 @@ class_name Octree
 @export var max_depth: int = 1
 ## The size of this branch in 3D
 @export var size: Vector3
-@export var create_collider: bool
+@export var create_collider: bool = false
 
 ## The branch depth of this tree
 var depth = 0
@@ -20,6 +20,12 @@ var bounding_box: AABB
 var leaves: Array[OctreeLeaf]
 ## The total number of leaves contained within this tree and its branches
 var total_leaves: int = 0
+
+## {Vector3: OctreeLeaf}
+var leaves_dict: Dictionary
+
+static var total_trees: int = 0
+
 
 # DIRECTIONS
 static var TOP_FRONT_RIGHT =       Vector3i( 1,  1,  1)
@@ -34,6 +40,7 @@ static var BOTTOM_BACK_LEFT =      Vector3i(-1, -1, -1)
 func _ready():
     bounding_box = AABB(global_position - size/2.0, size)
     leaves = []
+    total_trees += 1
     if create_collider:
         var collider = CollisionShape3D.new()
         collider.shape = BoxShape3D.new()
@@ -44,23 +51,47 @@ func _ready():
 ## Returns a list of all leaves contained within the provided sphere
 ## [param center] The center of the selection sphere
 ## [param radius] the radius of the selection sphere
-func get_leaves_in_radius(center: Vector3, radius: float, condition: Callable = _default_get_radius_condition) -> Array[OctreeLeaf]:
+func get_leaves_in_radius_recursive(center: Vector3, radius: float) -> Array[OctreeLeaf]:
     var contained_leaves: Array[OctreeLeaf] = []
+    var squared_radius = radius * radius
     # if this octree intersects the radius, calculate whether leaves are in it
     if aabb_intersects_sphere(bounding_box, center, radius):
         # determine whether directly owned leaves are within the radius
         for leaf in leaves:
             #var pass_cond = condition.call(leaf)
-            if leaf.global_position.distance_to(center) <= radius:# and pass_cond:
+            if leaf.global_position.distance_squared_to(center) <= squared_radius:
                 contained_leaves.append(leaf)
+            #if leaf.global_position.distance_to(center) <= radius:# and pass_cond:
+                #contained_leaves.append(leaf)
         # get leaves within radius from child octaves
         for octave in octaves.values():
-            contained_leaves.append_array(octave.get_leaves_in_radius(center, radius, condition))
+            contained_leaves.append_array(octave.get_leaves_in_radius(center, radius))
     
     return contained_leaves
-   
-func _default_get_radius_condition(leaf: OctreeLeaf) -> bool:
-    return true
+
+func get_leaves_in_radius(center: Vector3, radius: float) -> Array[OctreeLeaf]:
+    var result: Array[OctreeLeaf] = []
+    var stack: Array[Octree] = [self]
+
+    while stack.size() > 0:
+        var node = stack.pop_back()
+        if not aabb_intersects_sphere(node.bounding_box, center, radius):
+            continue
+
+        for leaf in node.leaves:
+            if leaf.global_position.distance_to(center) <= radius:
+                result.append(leaf)
+
+        for octave in node.octaves.values():
+            stack.append(octave)
+    
+    return result
+
+#func get_leaves_in_radius_conditional(center: Vector3, radius: float, condition: Callable = func(): return true):
+    #pass
+
+#func _default_get_radius_condition(leaf: OctreeLeaf) -> bool:
+    #return true
 
 ## Removes a leaf from the octree, and removes empty octaves
 ## [param leaf] The leaf to be removed
@@ -72,7 +103,7 @@ func remove_leaf(leaf: OctreeLeaf, force_removal: bool = false) -> bool:
         # check whether this leaf is directly owned by this tree, and remove it if so
         for owned_leaf in leaves:
             if owned_leaf == leaf:
-                _remove_leaf_from_array(leaf)
+                _remove_direct_leaf(leaf)
                 return true
         
         # attempt to remove the leaf from any child octaves
@@ -114,7 +145,7 @@ func add_leaf(leaf: OctreeLeaf) -> bool:
                 return false
         # otherwise, just add the leaf to this octree
         else:
-            _add_leaf_to_array(leaf)
+            _add_direct_leaf(leaf)
             return true
 
     printerr("Leaf is not positioned inside this tree's bounds.")
@@ -168,7 +199,7 @@ func get_lowest_octave(point: Vector3) -> Octree:
 
 ## Adds a leaf directly to this tree, adding it as a child and increasing the leaf count
 ## [param leaf] The leaf to add to the tree
-func _add_leaf_to_array(leaf: OctreeLeaf):
+func _add_direct_leaf(leaf: OctreeLeaf):
     leaf.parent_tree = self
     leaves.append(leaf)
     add_child(leaf)
@@ -177,7 +208,7 @@ func _add_leaf_to_array(leaf: OctreeLeaf):
 
 ## Removes a leaf directly from this tree, removing it as a child and decreasing the leaf count
 ## [param leaf] The leaf to remove from this tree
-func _remove_leaf_from_array(leaf: OctreeLeaf):
+func _remove_direct_leaf(leaf: OctreeLeaf):
     leaf.parent_tree = null
     leaves.erase(leaf)
     remove_child(leaf)
