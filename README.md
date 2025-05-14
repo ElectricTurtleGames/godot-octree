@@ -1,6 +1,8 @@
 # Godot Octree
 Extendable 3D Octrees for `Godot 4.x`
 
+![An example of the demo project running with 100,000 leaves](https://github.com/ElectricTurtleGames/godot-octree/blob/main/addons/godot-octree/example/example.gif)
+
 ## Octrees
 An octree is a data structure commonly used for representing a large number of objects in 3D space in an extremely efficient manner.  This is accomplished by splitting an area of 3D space into recursive "octants", or "octaves", which are themselves octrees.  Each octree has eight octaves, which can each be represented by Vector3i indices that define its direction from the center of the octree.  
 
