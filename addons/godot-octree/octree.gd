@@ -87,11 +87,13 @@ func get_leaves_in_radius(center: Vector3, radius: float) -> Array[OctreeLeaf]:
     
     return result
 
-#func get_leaves_in_radius_conditional(center: Vector3, radius: float, condition: Callable = func(): return true):
-    #pass
+func get_leaves_in_aabb(aabb: AABB) -> Array[OctreeLeaf]:
+    printerr("'get_leaves_in_cylinder()' not yet implemented in CPU Octree")
+    return []
 
-#func _default_get_radius_condition(leaf: OctreeLeaf) -> bool:
-    #return true
+func get_leaves_in_cylinder(start: Vector3, end: Vector3, radius: float, extend_infinite: bool = false) -> Array[OctreeLeaf]:
+    printerr("'get_leaves_in_cylinder()' not yet implemented in CPU Octree")
+    return []
 
 ## Removes a leaf from the octree, and removes empty octaves
 ## [param leaf] The leaf to be removed
@@ -243,6 +245,68 @@ static func aabb_intersects_sphere(aabb: AABB, sphere_center: Vector3, sphere_ra
     
     var distance_squared = closest_point.distance_squared_to(sphere_center)
     return distance_squared <= sphere_radius * sphere_radius
+
+## Checks whether an AABB intersects with another AABB
+## [param a] First AABB
+## [param b] Second AABB
+## [return] True if the two AABBs intersect
+static func aabb_intersects_aabb(a: AABB, b: AABB) -> bool:
+    return a.abs().intersects(b.abs())
+
+## Checks whether an AABB intersects with a finite cylinder
+## [param aabb] The AABB to test
+## [param start] Start point of the cylinder
+## [param end] End point of the cylinder
+## [param radius] Radius of the cylinder
+## [return] True if the cylinder intersects with the AABB
+static func aabb_intersects_cylinder(aabb: AABB, start: Vector3, end: Vector3, radius: float) -> bool:
+    var axis = end - start
+    var axis_length_sq = axis.length_squared()
+    if axis_length_sq == 0.0:
+        # Degenerate case, treat as sphere
+        return aabb_intersects_sphere(aabb, start, radius)
+
+    # Find closest point on the segment to the AABB
+    var aabb_center = aabb.position + aabb.size * 0.5
+    var rel = aabb_center - start
+    var t = clamp(rel.dot(axis) / axis_length_sq, 0.0, 1.0)
+    var closest_point_on_cylinder = start + axis * t
+
+    # Clamp the point to the AABB to find the closest point on the AABB
+    var closest_point_on_aabb = Vector3(
+        clamp(closest_point_on_cylinder.x, aabb.position.x, aabb.position.x + aabb.size.x),
+        clamp(closest_point_on_cylinder.y, aabb.position.y, aabb.position.y + aabb.size.y),
+        clamp(closest_point_on_cylinder.z, aabb.position.z, aabb.position.z + aabb.size.z)
+    )
+
+    var distance_sq = closest_point_on_cylinder.distance_squared_to(closest_point_on_aabb)
+    return distance_sq <= radius * radius
+
+## Checks whether an AABB intersects with an infinite cylinder
+## [param aabb] The AABB to test
+## [param p1] A point on the cylinder axis
+## [param p2] Another point on the cylinder axis (defining its direction)
+## [param radius] Radius of the cylinder
+## [return] True if the infinite cylinder intersects with the AABB
+static func aabb_intersects_cylinder_inf(aabb: AABB, p1: Vector3, p2: Vector3, radius: float) -> bool:
+    var axis = (p2 - p1).normalized()
+    var aabb_center = aabb.position + aabb.size * 0.5
+
+    # Project AABB center onto cylinder axis to find the closest point
+    var to_center = aabb_center - p1
+    var t = to_center.dot(axis)
+    var closest_point_on_axis = p1 + axis * t
+
+    # Find the closest point on the AABB to the projected axis point
+    var closest_point_on_aabb = Vector3(
+        clamp(closest_point_on_axis.x, aabb.position.x, aabb.position.x + aabb.size.x),
+        clamp(closest_point_on_axis.y, aabb.position.y, aabb.position.y + aabb.size.y),
+        clamp(closest_point_on_axis.z, aabb.position.z, aabb.position.z + aabb.size.z)
+    )
+
+    var distance_sq = closest_point_on_axis.distance_squared_to(closest_point_on_aabb)
+    return distance_sq <= radius * radius
+
 
 static func truncate_away_from_zero(value: float) -> int:
     var truncated = int(value)

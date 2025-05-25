@@ -1,7 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://dx3fcd331hqem"]
+[gd_scene load_steps=5 format=3 uid="uid://durvux0pa8u54"]
 
-[ext_resource type="Script" path="res://addons/godot-octree/example/octree_demo.gd" id="1_rq4y6"]
-[ext_resource type="Script" path="res://addons/godot-octree/octree.gd" id="2_4mkfl"]
+[ext_resource type="Script" path="res://addons/godot-octree/example/octree_demo.gd" id="1_gwfwa"]
+[ext_resource type="Script" path="res://addons/godot-octree/octree_gpu.gd" id="3_a3dqs"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_s2xll"]
 transparency = 1
@@ -13,21 +13,26 @@ no_depth_test = true
 albedo_color = Color(1, 0, 0, 1)
 
 [node name="OctreeDemo" type="Node3D" node_paths=PackedStringArray("octree", "camera_axis", "total_trees_value", "total_leaves_value", "highlighted_leaves_value", "fps_value")]
-script = ExtResource("1_rq4y6")
+script = ExtResource("1_gwfwa")
+object_count = 5.0
 default_material = SubResource("StandardMaterial3D_s2xll")
 highlight_material = SubResource("StandardMaterial3D_slymr")
 animate = true
 animation_rate = 0.01
-octree = NodePath("Octree")
+init_update_interval = 4.0
+search_shape = 2
+search_radius = 1.0
+cylinder_length = 50.0
+octree = NodePath("OctreeGPU")
 camera_axis = NodePath("CameraAxis")
 total_trees_value = NodePath("InfoHUD/HBoxContainer/TotalTreesValue")
 total_leaves_value = NodePath("InfoHUD/HBoxContainer2/TotalLeavesValue")
 highlighted_leaves_value = NodePath("InfoHUD/HBoxContainer3/HighlightedLeavesValue")
 fps_value = NodePath("InfoHUD/HBoxContainer4/FPSValue")
 
-[node name="Octree" type="Area3D" parent="."]
-script = ExtResource("2_4mkfl")
-max_depth = 5
+[node name="OctreeGPU" type="Area3D" parent="."]
+script = ExtResource("3_a3dqs")
+max_depth = 4
 size = Vector3(100, 100, 100)
 
 [node name="CameraAxis" type="Node3D" parent="."]

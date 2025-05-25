@@ -1,12 +1,19 @@
 extends Node3D
 
-@export var n_objects: int
+@export_range(0.01, 8.0, 0.01, "suffix:(10^n)", "or_greater") var object_count: float = 3.0
 
 @export var default_material: Material
 @export var highlight_material: Material
 
 @export var animate: bool = false
 @export var animation_rate: float = 1.0
+
+@export_range(0.01, 8.0, 0.01, "suffix:(10^n)", "or_greater") var init_update_interval: float = 3.0
+
+@export var search_shape: SearchShape = SearchShape.SPHERE
+@export var search_radius: float = 20.0
+
+@export var cylinder_length: float = 10.0
 
 @export_group("Nodes")
 @export var octree: Octree
@@ -18,11 +25,24 @@ extends Node3D
 
 var octree_size: Vector3
 
+var n_objects: int:
+    get: return int(10 ** object_count)
+    
+var init_update_rate: int:
+    get: return int(10 ** init_update_interval)
+
 var _animation_timer: float = 0.0
 var _octree_generated: bool = false
 var _sphere_mesh: SphereMesh
 
 var _currently_highlighted: Array
+
+enum SearchShape {
+    SPHERE,
+    CUBE,
+    CYLINDER,
+    CYLINDER_INF,
+}
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -46,32 +66,67 @@ func _generate():
         new_item.set_surface_override_material(0, default_material)
         
         octree.add_leaf_item(new_item, pos)
-        if i % 100 == 0:
+        if i % init_update_rate == 0:
             print(i)
             await get_tree().create_timer(0.001).timeout
         
     _octree_generated = true
         
-func _test_radius(center: Vector3):    
+func _search_area():    
     for leaf in _currently_highlighted:
-        leaf.leaf_item.set_surface_override_material(0, default_material)
+        leaf.leaf_item.set_surface_override_material(0, default_material)    
     
     _currently_highlighted.clear()
         
-    var in_radius = octree.get_leaves_in_radius(center, 20.0)
-    _currently_highlighted = in_radius
-    for obj in in_radius:
+    var results = []
+    match(search_shape):
+        SearchShape.SPHERE:
+            results = _search_sphere()
+        SearchShape.CUBE:
+            results = _search_cube()
+        SearchShape.CYLINDER:
+            results = _search_cylinder()
+        SearchShape.CYLINDER_INF:
+            results = _search_cylinder_inf()
+        
+    _currently_highlighted = results
+    for obj in results:
         obj.leaf_item.set_surface_override_material(0, highlight_material)
 
+func _search_sphere():
+    var elapsed_time = Time.get_ticks_msec()
+    var center = get_modulated_vector3(elapsed_time / 1000.0, octree_size/2.0 - Vector3.ONE * 10, Vector3(0.2, 0.4, 0.6))
+    return octree.get_leaves_in_radius(center, search_radius)
+    
+func _search_cube():
+    var elapsed_time = Time.get_ticks_msec()
+    var center = get_modulated_vector3(elapsed_time / 1000.0, octree_size/2.0 - Vector3.ONE * 10, Vector3(0.2, 0.4, 0.6))
+    var start = center + Vector3.ONE * (search_radius / 2.0)
+    var size = Vector3.ONE * search_radius
+    return octree.get_leaves_in_aabb(AABB(start, size))
+    
+func _search_cylinder():
+    var elapsed_time = Time.get_ticks_msec()
+    var center = get_modulated_vector3(elapsed_time / 1000.0, octree_size/2.0 - Vector3.ONE * 10, Vector3(0.2, 0.4, 0.6))
+    var modulated_direction = get_modulated_vector3(elapsed_time / 1000.0, Vector3.ONE, Vector3(0.2, 0.4, 0.6)).normalized()
+    var start = center - modulated_direction * (cylinder_length / 2.0)
+    var end = center + modulated_direction * (cylinder_length / 2.0)
+    return octree.get_leaves_in_cylinder(start, end, search_radius)
+    
+func _search_cylinder_inf():
+    var elapsed_time = Time.get_ticks_msec()
+    var center = get_modulated_vector3(elapsed_time / 1000.0, octree_size/2.0 - Vector3.ONE * 10, Vector3(0.2, 0.4, 0.6))
+    var modulated_direction = get_modulated_vector3(elapsed_time / 1000.0, Vector3.ONE, Vector3(0.2, 0.4, 0.6)).normalized()
+    var start = center - modulated_direction * (cylinder_length / 2.0)
+    var end = center + modulated_direction * (cylinder_length / 2.0)
+    return octree.get_leaves_in_cylinder(start, end, search_radius, true)
         
 func _physics_process(delta):
     if animate:
         camera_axis.rotate_y(0.1 * delta)
 
         if _animation_timer <= 0 and _octree_generated:
-            var elapsed_time = Time.get_ticks_msec()
-            var center = get_modulated_vector3(elapsed_time / 1000.0, octree_size/2.0 - Vector3.ONE * 10, Vector3(0.2, 0.4, 0.6))
-            _test_radius(center)    
+            _search_area()
             _animation_timer = animation_rate
         _animation_timer -= delta
     

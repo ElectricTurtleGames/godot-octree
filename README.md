@@ -1,6 +1,8 @@
 # Godot Octree
 Extendable 3D Octrees for `Godot 4.x`
 
+###### Note: This repo also contains the `glsl_point_search` library as godot-octree currently depends on it.  This may change in future.
+
 ## Octrees
 An octree is a data structure commonly used for representing a large number of objects in 3D space in an extremely efficient manner.  This is accomplished by splitting an area of 3D space into recursive "octants", or "octaves", which are themselves octrees.  Each octree has eight octaves, which can each be represented by Vector3i indices that define its direction from the center of the octree.  
 
@@ -30,6 +32,13 @@ To search for leaves efficiently within an octree, call `Octree.get_leaves_in_ra
 lower octaves still contain arrays of objects that will be searched in `O(n)` time, so a higher branch depth will allow for much more efficient searches, at the cost of a larger data structure.
 
 For more information on usage, see the inline documentation.
+
+## GPU Acceleration
+Using the `glsl_point_search` library, the efficiency of searches can be improved using GLSL compute shaders to perform operations on the GPU intead of the CPU.  
+There is very little effort on the user's part to utilize the GPU, but this method *cannot* be used in Compatability rendering mode.  
+
+To use the GPU, simply replace the `Octree` node with the included `OctreeGPU` node, which will automatically perform searches via the compute shaders.
+Currently support search patterns are `Sphere`, `AABB` (rectangular prism, i.e. cube) and `Cylinder`.
 
 ## Planned Features
 - **Sector recalculation**: Monitoring of leaves to determine when a leaf has exited an octave, and subsequent re-assignment of that leaf to the new octave
