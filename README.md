@@ -1,6 +1,8 @@
 # Godot Octree
 Extendable 3D Octrees for `Godot 4.x`
 
+![An example of the demo project running with 100,000 leaves](https://github.com/ElectricTurtleGames/godot-octree/blob/main/addons/godot-octree/example/example.gif)
+
 ###### Note: This repo also contains the `glsl_point_search` library as godot-octree currently depends on it.  This may change in future.
 
 ## Octrees
